@@ -2,6 +2,7 @@ import * as PIXI from "pixi.js";
 import Scene from "./Scene";
 import GameManager from "./GameManager";
 import FirstScene from "./FirstScene";
+import LoaderAddParam from "./LoaderAddParam";
 
 export default class SecondScene extends Scene {
   private text!: PIXI.Text;
@@ -31,5 +32,11 @@ export default class SecondScene extends Scene {
 
   public nextScene(): void {
     GameManager.loadScene(new FirstScene());
+  }
+
+  createInitialResourceList(): (LoaderAddParam | string)[] {
+    const assets = super.createInitialResourceList();
+    assets.push("assets/brazil.png");
+    return assets;
   }
 }

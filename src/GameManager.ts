@@ -1,11 +1,13 @@
 import * as PIXI from "pixi.js";
-import Scene from "Scene";
+import Scene from "./Scene";
+import Config from "./Config";
 
 export default class GameManager {
   public static instance: GameManager;
   public game!: PIXI.Application;
   private sceneTransitionOutFinished: boolean = true;
   private currentScene?: Scene;
+  private sceneResourceLoaded: boolean = true;
 
   constructor(app: PIXI.Application) {
     if (GameManager.instance) {
@@ -24,6 +26,8 @@ export default class GameManager {
       height: params.glHeight,
       backgroundColor: params.backgroundColor
     });
+    //PIXI.ApplicationインスタンスのloaderプロパティにbaseUrlを設定
+    game.loader.baseUrl = Config.ResourceBaseUrl;
     GameManager.instance = new GameManager(game);
     document.body.appendChild(game.view);
     game.ticker.add((delta: number) => {
@@ -36,7 +40,8 @@ export default class GameManager {
   //可能であれば新しいシーンへのトランジションを開始する
   public static transitionInIfPossible(newScene: Scene): boolean {
     const instance = GameManager.instance;
-    if (!instance.sceneTransitionOutFinished) {
+    if (!instance.sceneTransitionOutFinished || !instance.sceneResourceLoaded) {
+      //リソースロードとトランジション終了のどちらかが未完了ならトランジションを開始しない
       return false;
     }
     if (instance.currentScene) {
@@ -50,18 +55,29 @@ export default class GameManager {
     return true;
   }
 
-  //シーンをロードする 新しいシーンと古いシーンのトランジションを同時に開始する
+  //シーンをロードする
+  //新しいシーンのリソース読み込みと、古いシーンのトランジションを同時に開始する
+  //いずれも完了したら、新しいシーンのトランジションを開始する
   public static loadScene(newScene: Scene): void {
     const instance = GameManager.instance;
     if (instance.currentScene) {
+      //現在のシーンがセットされているなら
+      instance.sceneResourceLoaded = false;
       instance.sceneTransitionOutFinished = false;
+      newScene.beginLoadResource(() => {
+        instance.sceneResourceLoaded = true;
+        GameManager.transitionInIfPossible(newScene);
+      });
       instance.currentScene.beginTransitionOut((_: Scene) => {
         instance.sceneTransitionOutFinished = true;
         GameManager.transitionInIfPossible(newScene);
       });
     } else {
       instance.sceneTransitionOutFinished = true;
-      GameManager.transitionInIfPossible(newScene);
+      newScene.beginLoadResource(() => {
+        instance.sceneResourceLoaded = true;
+        GameManager.transitionInIfPossible(newScene);
+      });
     }
   }
 }

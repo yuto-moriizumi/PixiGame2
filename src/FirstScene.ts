@@ -2,8 +2,12 @@ import * as PIXI from "pixi.js";
 import Scene from "./Scene";
 import GameManager from "./GameManager";
 import SecondScene from "./SecondScene";
+import Transition from "./Transition";
+import Fade from "./Fade";
 
 export default class FirstScene extends Scene {
+  protected transitionIn: Transition = new Fade(1.0, 0.0, -0.01);
+  protected transitionOut: Transition = new Fade(0.0, 1.0, 0.01);
   private text!: PIXI.Text;
   private count: number = 0;
   constructor() {
