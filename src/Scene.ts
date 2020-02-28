@@ -4,12 +4,25 @@ import Transition from "./Transition";
 import Immediate from "./Immediate";
 import LoaderAddParam from "./LoaderAddParam";
 import GameManager from "./GameManager";
+import Resource from "./Resources";
+import UIGraph from "./UIGraph";
+import UINodeFactory from "./UINodeFactory";
+import Graph from "Graph";
 
 export default abstract class Scene extends PIXI.Container {
   protected transitionIn: Transition = new Immediate();
   protected transitionOut: Transition = new Immediate();
   protected objectsToUpdate: UpdateObject[] = [];
   protected elapsedFrameCount: number = 0;
+  /**
+   * UiGraph でロードされた UI データ
+   */
+  protected uiGraph: { [key: string]: PIXI.Container } = {};
+  /**
+   * UiGraph でロードされた UI データを配置するための PIXI.Container
+   * 描画順による前後関係を統制するために一つの Container にまとめる
+   */
+  protected uiGraphContainer: PIXI.Container = new PIXI.Container();
 
   //メインループで更新処理を行うべきオブジェクトの登録
   protected registerUpdatingObject(object: UpdateObject): void {
@@ -56,6 +69,7 @@ export default abstract class Scene extends PIXI.Container {
     }
   }
 
+  //UI Graph意外に利用するリソースがある場合に派生クラスで実装する
   protected createInitialResourceList(): (LoaderAddParam | string)[] {
     //リソースリスト取得
     return [];
@@ -67,28 +81,27 @@ export default abstract class Scene extends PIXI.Container {
       this.loadInitialResource(() => resolve());
     })
       .then(() => {
-        onLoaded();
+        return new Promise(resolve => {
+          const additionalAssets = this.onInitialResourceLoaded();
+          this.loadAdditionalResource(additionalAssets, () => resolve());
+        });
       })
       .then(() => {
+        this.onAdditionalResourceLoaded();
+        onLoaded();
         this.onResourceLoaded();
       });
   }
 
-  //最初に指定されたリソースをダウンロードする
+  //最初に、UIGraph情報とcreateInitialResourceListで指定されたリソースをダウンロードする
   protected loadInitialResource(onLoaded: () => void): void {
     const assets = this.createInitialResourceList();
-    const filteredAssets = this.filterLoadedAssets(assets);
-    if (filteredAssets.length > 0) {
-      GameManager.instance.game.loader
-        .add(filteredAssets)
-        .load(() => onLoaded());
-    } else {
-      onLoaded();
-    }
+    const name = Resource.SceneUIGraph(this);
+    assets.push(name);
+    GameManager.instance.game.loader
+      .add(this.filterLoadedAssets(assets))
+      .load(() => onLoaded());
   }
-
-  //beginLoadResource完了時のコールバックメソッド
-  protected onResourceLoaded(): void {}
 
   //渡されたアセットのリストから、ロード済みのものをフィルタリングする
   private filterLoadedAssets(
@@ -108,5 +121,62 @@ export default abstract class Scene extends PIXI.Container {
       }
     }
     return Array.from(assetMap.values());
+  }
+
+  //loadInitialResource完了時のコールバックメソッド
+  //追加でロードしなければならないてくすちゃなどの情報を返す
+  protected onInitialResourceLoaded(): string[] | LoaderAddParam[] {
+    const additionalAssets = [];
+    const name = Resource.SceneUIGraph(this);
+    const UIGraph = GameManager.instance.game.loader.resources[name];
+    for (const node of UIGraph.data.nodes) {
+      if (node.type === "sprite")
+        additionalAssets.push({
+          name: node.params.textureName,
+          url: node.params.url
+        });
+    }
+    return additionalAssets;
+  }
+
+  //onInitialResourceLoadedで発生した追加のリソースをロードする
+  protected loadAdditionalResource(
+    assets: string[] | LoaderAddParam[],
+    onLoaded: () => void
+  ): void {
+    GameManager.instance.game.loader
+      .add(this.filterLoadedAssets(assets))
+      .load(() => onLoaded());
+  }
+
+  //追加のリソースロード完了時のコールバック 何もしない
+  protected onAdditionalResourceLoaded(): void {}
+
+  //すべてのリソースロード処理完了時のコールバック
+  protected onResourceLoaded(): void {
+    const sceneUIGraphName = Resource.SceneUIGraph(this);
+    const resources = GameManager.instance.game.loader.resources;
+    const json = resources[sceneUIGraphName].data;
+    this.prepareUIGraphContainer(resources[sceneUIGraphName].data);
+    this.addChild(this.uiGraphContainer);
+  }
+
+  protected prepareUIGraphContainer(uiData: Graph): void {
+    for (const nodeData of uiData.nodes) {
+      let factory =
+        UIGraph.getFactory(nodeData.type) ||
+        this.getCustomUIGraphFactory(nodeData.type);
+      if (!factory) continue;
+      const node = factory.createUiNodeByGraphElement(nodeData);
+      if (!node) continue;
+      if (nodeData.events)
+        factory.attachUIEventByGraphElement(nodeData.events, node, this);
+      this.uiGraph[nodeData.id] = node;
+      this.uiGraphContainer.addChild(node);
+    }
+  }
+
+  protected getCustomUIGraphFactory(_type: string): UINodeFactory | null {
+    return null;
   }
 }
