@@ -9,6 +9,7 @@ import Sound from "./Sound";
 export default class TitleScene extends Scene {
   private text!: PIXI.Text;
   private sound: Sound | null = null;
+  private readonly textAppealDuration: number = 200;
 
   constructor() {
     super();
@@ -77,5 +78,11 @@ export default class TitleScene extends Scene {
     if (this.sound && this.sound.isPlayed)
       this.sound.isPaused ? this.sound.resume() : this.sound.pause();
     if (!this.sound.isPlayed) this.sound.play();
+  }
+
+  public update(dt: number) {
+    super.update(dt);
+    if (this.elapsedFrameCount % this.textAppealDuration === 0)
+      this.text.visible = !this.text.visible;
   }
 }

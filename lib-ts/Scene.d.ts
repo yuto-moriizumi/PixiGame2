@@ -6,6 +6,7 @@ export default abstract class Scene extends PIXI.Container {
     protected transitionIn: Transition;
     protected transitionOut: Transition;
     protected objectsToUpdate: UpdateObject[];
+    protected elapsedFrameCount: number;
     protected registerUpdatingObject(object: UpdateObject): void;
     protected updateRegisteredObjects(delta: number): void;
     beginTransitionIn(onTransitionFinished: (scene: Scene) => void): void;

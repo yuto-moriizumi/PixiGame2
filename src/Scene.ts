@@ -9,6 +9,7 @@ export default abstract class Scene extends PIXI.Container {
   protected transitionIn: Transition = new Immediate();
   protected transitionOut: Transition = new Immediate();
   protected objectsToUpdate: UpdateObject[] = [];
+  protected elapsedFrameCount: number = 0;
 
   //メインループで更新処理を行うべきオブジェクトの登録
   protected registerUpdatingObject(object: UpdateObject): void {
@@ -47,6 +48,7 @@ export default abstract class Scene extends PIXI.Container {
 
   //GameManagerによって、requestAnimationFrame毎に呼び出されるメソッド
   public update(delta: number): void {
+    this.elapsedFrameCount++;
     if (this.transitionIn.isActive()) {
       this.transitionIn.update(delta);
     } else if (this.transitionOut.isActive()) {
