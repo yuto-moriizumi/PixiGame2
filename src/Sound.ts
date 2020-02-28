@@ -38,6 +38,8 @@ export default class Sound {
 
     this.source.onended = () => this.stop(); //再生終了時に確実にAudioSourceNodeを破棄する
     this.played = true;
+    this.playedAt = audioContext.currentTime - offset;
+    this.paused = false;
   }
   public stop(): void {
     if (!this.source || !this.played) return;
@@ -47,9 +49,44 @@ export default class Sound {
     } catch (_e) {}
     this.source.onended = null;
     this.source = null; //SourceNodeは一度再生したら再利用できないので破棄
+    this.paused = false;
   }
   //サウンド再生時間を返す
+  public get elapsedTime(): number {
+    if (this.paused) return this.offset;
+    const audioContext = SoundManager.sharedContext;
+    if (!this.source || !audioContext) return 0;
+    const playedTime = audioContext.currentTime - this.playedAt;
+    //ループ再生の場合は合計の再生時間から割り出す
+    if (this.loop) {
+      const playLength = this.source.loopEnd - this.source.loopStart;
+      if (playedTime > playLength)
+        return this.source.loopStart + (playedTime % playLength);
+    }
+    return playedTime;
+  }
 
-  public pause(): void {}
-  public resume(): void {}
+  public pause(): void {
+    if (this.paused || !this.played || !this.source) return;
+    this.offset = this.elapsedTime;
+    this.stop(); //一度再生を停止する（AudioSourceNodeが再利用できないので）
+    this.paused = true;
+  }
+  public resume(): void {
+    if (!this.paused || !this.played) return;
+    this.play(this.loop, this.offset);
+    this.paused = false;
+  }
+  public set volume(value: number) {
+    if (this.gainNode) this.gainNode.gain.value = value;
+  }
+  public get volume(): number {
+    return this.gainNode ? this.gainNode.gain.value : -1;
+  }
+  public get isPlayed(): boolean {
+    return this.played;
+  }
+  public get isPaused(): boolean {
+    return this.paused;
+  }
 }

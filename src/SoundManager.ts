@@ -42,11 +42,13 @@ export default class SoundManager {
     const majorVersion = browser.version ? browser.version.split(".")[0] : "0";
     if (browser.name === "chrome" && Number.parseInt(majorVersion, 10) >= 66) {
       soundInitializer = () => {
+        console.log("initialized!");
         if (SoundManager.sharedContext) SoundManager.sharedContext.resume();
         document.body.removeEventListener(eventName, soundInitializer);
       };
     } else if (browser.name === "safari") {
       soundInitializer = () => {
+        console.log("initialized!");
         if (SoundManager.sharedContext) {
           const slientSource = SoundManager.sharedContext.createBufferSource();
           slientSource.buffer = SoundManager.sharedContext.createBuffer(
@@ -57,8 +59,8 @@ export default class SoundManager {
           slientSource.connect(SoundManager.sharedContext.destination);
           slientSource.start();
           slientSource.disconnect();
+          document.body.removeEventListener(eventName, soundInitializer);
         }
-        document.body.removeEventListener(eventName, soundInitializer);
       };
     } else return;
     document.body.addEventListener(eventName, soundInitializer);
