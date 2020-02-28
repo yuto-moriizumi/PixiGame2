@@ -10,5 +10,8 @@ declare const Resource: Readonly<{
             SE: {};
         };
     };
+    FontFamily: {
+        Default: string;
+    };
 }>;
 export default Resource;

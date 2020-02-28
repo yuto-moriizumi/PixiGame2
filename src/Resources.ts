@@ -9,6 +9,9 @@ const Resource = Object.freeze({
       },
       SE: {}
     }
+  },
+  FontFamily: {
+    Default: "MisakiGothic"
   }
 });
 
