@@ -1,6 +1,7 @@
 import * as PIXI from "pixi.js";
 import Scene from "./Scene";
 import Config from "./Config";
+import SoundManager from "./SoundManager";
 
 export default class GameManager {
   public static instance: GameManager;
@@ -35,6 +36,7 @@ export default class GameManager {
         this.instance.currentScene.update(delta);
       }
     });
+    SoundManager.init();
   }
 
   //可能であれば新しいシーンへのトランジションを開始する

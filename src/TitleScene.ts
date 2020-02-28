@@ -4,6 +4,7 @@ import Fade from "./Fade";
 import GameManager from "./GameManager";
 import LoaderAddParam from "./LoaderAddParam";
 import Resource from "./Resources";
+import Sound from "./Sound";
 
 export default class TitleScene extends Scene {
   private text!: PIXI.Text;
@@ -75,6 +76,10 @@ export default class TitleScene extends Scene {
     this.addChild(this.text);
     this.interactive = true;
     this.on("pointerup", () => this.showOrderScene());
+
+    new Sound(
+      (resources[Resource.Static.Audio.Bgm.Title] as any).buffer
+    ).play();
   }
 
   //タップされたときのコールバック
