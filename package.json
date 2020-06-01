@@ -18,11 +18,11 @@
     "typescript": "^3.8.2",
     "webpack": "^4.41.6",
     "webpack-cli": "^3.3.11",
-    "webpack-dev-server": "^3.10.3"
+    "webpack-dev-server": "^3.11.0"
   },
   "dependencies": {
     "detect-browser": "^4.8.0",
-    "pixi.js": "^5.2.1",
+    "pixi.js": "^5.2.4",
     "webfontloader": "^1.6.28"
   }
 }
